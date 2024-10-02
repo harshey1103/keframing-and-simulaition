@@ -1,5 +1,6 @@
 #include "camera.hpp"
-
+#include <chrono>
+#include <thread>
 #include <iostream>
 
 using namespace COL781;
@@ -9,10 +10,10 @@ using namespace glm;
 GL::Rasterizer r;
 GL::ShaderProgram program;
 
-const int len = 5;
+const int len = 50;
 const int nv = len*len;
 const int nt = 2*(len-1)*(len-1);
-const int kStructure = 10;
+const int kStructure = 25000;
 const int kDamping = 10;
 
 vec3 vertices[nv];
@@ -103,7 +104,7 @@ void calculateNormals(int i){
 
 void calclateAccelerations(int i)
 {
-	std::cout << accelerations[i] << "\n";
+	// std::cout << accelerations[i] << "\n";
 	
 	if(i/len==0 || i/len==len-1 || i%len==0 || i%len==len-1) return;
 
@@ -176,7 +177,7 @@ int main() {
 
 	initializeScene();
 	while (!r.shouldQuit()) {
-        float t = SDL_GetTicks64()*1e-3;
+        float t = SDL_GetTicks64()*1e-7;
 		updateScene(t);
 
 		camCtl.update();
