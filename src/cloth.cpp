@@ -70,17 +70,64 @@ void initializeScene() {
 	r.createTriangleIndices(object, nt, triangles);
 }
 
+bool inRange(int i)
+{
+	if(i >= nv || i < 0) return 0;
+	return 1;
+}
+
+void calculateNormals(int i){
+	vec3 normal = ivec3(0.0, 0.0, 0.0);
+	// top left
+	if(inRange(i-len+1)){
+		normal += glm::cross(vertices[i-len]-vertices[i], vertices[i-len+1]-vertices[i]);	
+		normal += glm::cross(vertices[i-len+1]-vertices[i], vertices[i+1]-vertices[i]);	
+	}
+	// bottom left
+	if(inRange(i-len-1)){
+		normal += glm::cross(vertices[i-1]-vertices[i], vertices[i-len]-vertices[i]);	
+	}
+	// bottom right
+	if(inRange(i+len-1)){
+		normal += glm::cross(vertices[i-1]-vertices[i], vertices[i+len-1]-vertices[i]);	
+		normal += glm::cross(vertices[i+len-1]-vertices[i], vertices[i+len]-vertices[i]);	
+	}
+	// top right
+	if(inRange(i+len-1)){
+		normal += glm::cross(vertices[i+len]-vertices[i], vertices[i+1]-vertices[i]);	
+	}
+	normals[i] = glm::normalize(normal);
+}
+
 void updateScene(float t) {
-	float freq = 2, amp = 1;
-	float phase0 = 0, phase1 = 0.5;
-	float theta0 = amp*cos(freq*t + phase0), theta1 = amp*cos(freq*t + phase1);
-	vertices[0] = vec3(0, -cos(theta0), sin(theta0));
-	vertices[1] = vec3(1, -cos(theta1), sin(theta1));
+	std::cout << vertices[6] << " " << velocities[6] << " " << accelerations[6] <<"\n";
+	// calculate accelerations 
+	for (int i = 0; i < nv; i++)
+	{
+		if(i/len==0 || i/len==len-1 || i%len==0 || i%len==len-1)
+			accelerations[i] = ivec3(0.0, 0.0, 0.0);
+		else 
+			accelerations[i] = ivec3(0.0, -1.0, 0.0); 
+	}
+
+	// calclate velocites 
+	for (int i = 0; i < nv; i++)
+	{
+		velocities[i] += accelerations[i]*t; 
+	}
+
+	// calculate positions
+	for (int i = 0; i < nv; i++)
+	{
+		vertices[i] += velocities[i]*t; 
+	}
+
 	r.updateVertexAttribs(vertexBuf, nv, vertices);
-	vertices[0] = glm::normalize(glm::cross(vertices[1]-vertices[0], vertices[3]-vertices[0]));
-	vertices[1] = glm::normalize(glm::cross(vertices[2]-vertices[1], vertices[0]-vertices[1]));
-	vertices[2] = glm::normalize(glm::cross(vertices[3]-vertices[2], vertices[1]-vertices[2]));
-	vertices[3] = glm::normalize(glm::cross(vertices[0]-vertices[3], vertices[2]-vertices[3]));
+	
+	// calculate normals 
+	for (int i = 0; i < nv; i++)
+		calculateNormals(i);	
+
 	r.updateVertexAttribs(normalBuf, nv, normals);
 }
 
