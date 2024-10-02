@@ -12,6 +12,8 @@ GL::ShaderProgram program;
 const int len = 5;
 const int nv = len*len;
 const int nt = 2*(len-1)*(len-1);
+const int kStructure = 10;
+const int kDamping = 10;
 
 vec3 vertices[nv];
 vec3 velocities[nv];
@@ -61,8 +63,8 @@ void initializeScene() {
 	
 	for(int i = 0; i < len-1; i++)
 		for(int j = 0; j < len-1; j++){
-			triangles[2*(i*(len-1)+j)] = ivec3(len+j+i*len, 0+j+i*len, 1+j+i*len);
-			triangles[2*(i*(len-1)+j)+1] = ivec3(len+j+i*len, 1+j+i*len, len+1+j+i*len);
+			triangles[2*(i*(len-1)+j)] = vec3(len+j+i*len, 0+j+i*len, 1+j+i*len);
+			triangles[2*(i*(len-1)+j)+1] = vec3(len+j+i*len, 1+j+i*len, len+1+j+i*len);
 		}
 	
 	// debug();
@@ -77,7 +79,7 @@ bool inRange(int i)
 }
 
 void calculateNormals(int i){
-	vec3 normal = ivec3(0.0, 0.0, 0.0);
+	vec3 normal = vec3(0.0, 0.0, 0.0);
 	// top left
 	if(inRange(i-len+1)){
 		normal += glm::cross(vertices[i-len]-vertices[i], vertices[i-len+1]-vertices[i]);	
@@ -99,17 +101,41 @@ void calculateNormals(int i){
 	normals[i] = glm::normalize(normal);
 }
 
-void updateScene(float t) {
-	std::cout << vertices[6] << " " << velocities[6] << " " << accelerations[6] <<"\n";
-	// calculate accelerations 
-	for (int i = 0; i < nv; i++)
-	{
-		if(i/len==0 || i/len==len-1 || i%len==0 || i%len==len-1)
-			accelerations[i] = ivec3(0.0, 0.0, 0.0);
-		else 
-			accelerations[i] = ivec3(0.0, -1.0, 0.0); 
+void calclateAccelerations(int i)
+{
+	std::cout << accelerations[i] << "\n";
+	
+	if(i/len==0 || i/len==len-1 || i%len==0 || i%len==len-1) return;
+
+	accelerations[i] = vec3(0.0, -10.0, 0.0); 
+
+	int offsets[4] = {
+		-len, // left
+		- 1, // bottom
+		len,  // right
+		1   // top
+	};
+
+	for (int j = 0; j < 4; ++j) {
+		int neighborIndex = i + offsets[j];
+
+		if (inRange(neighborIndex)) {
+			float distance = glm::distance(vertices[i], vertices[neighborIndex]);
+			glm::vec3 normalizedDiff = glm::normalize(vertices[i] - vertices[neighborIndex]);
+			float velocityDot = glm::dot(velocities[i] - velocities[neighborIndex], normalizedDiff);
+			
+			accelerations[i] -= (kStructure * (distance - 1) + kDamping * velocityDot) * normalizedDiff;
+		}
 	}
 
+
+}
+
+void updateScene(float t) {
+	// calculate accelerations 
+	for (int i = 0; i < nv; i++)
+		calclateAccelerations(i);
+	
 	// calclate velocites 
 	for (int i = 0; i < nv; i++)
 	{
